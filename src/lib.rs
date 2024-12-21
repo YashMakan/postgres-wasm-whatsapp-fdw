@@ -101,7 +101,7 @@ impl Guest for ExampleFdw {
 
         // Extract the 'products' array from the response
         this.src_rows = resp_json
-            .pointer("/products")
+            .get("products") // Changed from pointer to direct get
             .ok_or("Cannot get 'products' from response")?
             .as_array()
             .ok_or("'products' is not an array")?
@@ -126,10 +126,6 @@ impl Guest for ExampleFdw {
 
         // Get the current product
         let src_row = &this.src_rows[this.src_idx];
-
-        // Bind the column name to a variable to extend its lifetime
-        let col_name = tgt_col.name(); // Assuming 'tgt_col' is defined in the loop
-        let tgt_col_name = col_name.as_str(); // Convert String to &str
 
         // Iterate through each target column and map source data
         for tgt_col in _ctx.get_columns() {
