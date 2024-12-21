@@ -3,10 +3,10 @@ mod bindings;
 use serde_json::Value as JsonValue;
 
 use bindings::{
-    exports::supabase::wrappers::routines::Guest,
+    exports::supabase::wrappers::Guest,
     supabase::wrappers::{
-        http, time,
-        types::{Cell, Context, FdwError, FdwResult, OptionsType, Row, TypeOid},
+        http,
+        types::{Cell, Context, FdwError, FdwResult, OptionsType, Row},
         utils,
     },
 };
@@ -51,10 +51,10 @@ impl Guest for ExampleFdw {
 
         // Retrieve API options from foreign server options
         let opts = ctx.get_options(OptionsType::Server);
-        // Fetch required options
-        this.phone_number = opts.require_or("phone_number", "")?;
-        this.from_number = opts.require_or("from_number", "")?;
-        this.api_key = opts.require_or("api_key", "")?;
+        // Fetch required options without using `?`
+        this.phone_number = opts.require_or("phone_number", "").unwrap_or_default();
+        this.from_number = opts.require_or("from_number", "").unwrap_or_default();
+        this.api_key = opts.require_or("api_key", "").unwrap_or_default();
 
         // Validate that all required options are provided
         if this.phone_number.is_empty() || this.from_number.is_empty() || this.api_key.is_empty() {
@@ -67,7 +67,7 @@ impl Guest for ExampleFdw {
         Ok(())
     }
 
-    fn begin_scan(ctx: &Context) -> FdwResult {
+    fn begin_scan(_ctx: &Context) -> FdwResult {
         let this = Self::this_mut();
 
         // Construct the request URL with phone_number and from_number
@@ -116,7 +116,7 @@ impl Guest for ExampleFdw {
         Ok(())
     }
 
-    fn iter_scan(ctx: &Context, row: &Row) -> Result<Option<u32>, FdwError> {
+    fn iter_scan(_ctx: &Context, row: &Row) -> Result<Option<u32>, FdwError> {
         let this = Self::this_mut();
 
         // If all products have been processed, end the scan
@@ -127,25 +127,71 @@ impl Guest for ExampleFdw {
         // Get the current product
         let src_row = &this.src_rows[this.src_idx];
 
-        // Map each column to the corresponding product field
-        for tgt_col in ctx.get_columns() {
-            let tgt_col_name = tgt_col.name();
+        // Retrieve the column name as &str to match against string literals
+        for tgt_col in _ctx.get_columns() {
+            let tgt_col_name = tgt_col.name().as_str(); // Fixed: Convert String to &str
+
             let cell = match tgt_col_name {
-                "id" => src_row.get("id").and_then(|v| v.as_str()).map(|v| Cell::String(v.to_owned())),
-                "retailer_id" => src_row.get("retailer_id").and_then(|v| v.as_str()).map(|v| Cell::String(v.to_owned())),
-                "name" => src_row.get("name").and_then(|v| v.as_str()).map(|v| Cell::String(v.to_owned())),
-                "description" => src_row.get("description").and_then(|v| v.as_str()).map(|v| Cell::String(v.to_owned())),
-                "url" => src_row.get("url").and_then(|v| v.as_str()).map(|v| Cell::String(v.to_owned())),
-                "currency" => src_row.get("currency").and_then(|v| v.as_str()).map(|v| Cell::String(v.to_owned())),
-                "price" => src_row.get("price").and_then(|v| v.as_str()).map(|v| Cell::String(v.to_owned())),
-                "is_hidden" => src_row.get("is_hidden").and_then(|v| v.as_bool()).map(|v| Cell::Bool(v)),
-                "max_available" => src_row.get("max_available").and_then(|v| v.as_i64()).map(|v| Cell::I64(v)),
-                "availability" => src_row.get("availability").and_then(|v| v.as_str()).map(|v| Cell::String(v.to_owned())),
-                "checkmark" => src_row.get("checkmark").and_then(|v| v.as_bool()).map(|v| Cell::Bool(v)),
-                "whatsapp_product_can_appeal" => src_row.get("whatsapp_product_can_appeal").and_then(|v| v.as_bool()).map(|v| Cell::Bool(v)),
-                "is_approved" => src_row.get("is_approved").and_then(|v| v.as_bool()).map(|v| Cell::Bool(v)),
-                "approval_status" => src_row.get("approval_status").and_then(|v| v.as_str()).map(|v| Cell::String(v.to_owned())),
-                "signedShimmedUrl" => src_row.get("signedShimmedUrl").and_then(|v| v.as_str()).map(|v| Cell::String(v.to_owned())),
+                "id" => src_row
+                    .get("id")
+                    .and_then(|v| v.as_str())
+                    .map(|v| Cell::String(v.to_owned())),
+                "retailer_id" => src_row
+                    .get("retailer_id")
+                    .and_then(|v| v.as_str())
+                    .map(|v| Cell::String(v.to_owned())),
+                "name" => src_row
+                    .get("name")
+                    .and_then(|v| v.as_str())
+                    .map(|v| Cell::String(v.to_owned())),
+                "description" => src_row
+                    .get("description")
+                    .and_then(|v| v.as_str())
+                    .map(|v| Cell::String(v.to_owned())),
+                "url" => src_row
+                    .get("url")
+                    .and_then(|v| v.as_str())
+                    .map(|v| Cell::String(v.to_owned())),
+                "currency" => src_row
+                    .get("currency")
+                    .and_then(|v| v.as_str())
+                    .map(|v| Cell::String(v.to_owned())),
+                "price" => src_row
+                    .get("price")
+                    .and_then(|v| v.as_str())
+                    .map(|v| Cell::String(v.to_owned())),
+                "is_hidden" => src_row
+                    .get("is_hidden")
+                    .and_then(|v| v.as_bool())
+                    .map(|v| Cell::Bool(v)),
+                "max_available" => src_row
+                    .get("max_available")
+                    .and_then(|v| v.as_i64())
+                    .map(|v| Cell::I64(v)),
+                "availability" => src_row
+                    .get("availability")
+                    .and_then(|v| v.as_str())
+                    .map(|v| Cell::String(v.to_owned())),
+                "checkmark" => src_row
+                    .get("checkmark")
+                    .and_then(|v| v.as_bool())
+                    .map(|v| Cell::Bool(v)),
+                "whatsapp_product_can_appeal" => src_row
+                    .get("whatsapp_product_can_appeal")
+                    .and_then(|v| v.as_bool())
+                    .map(|v| Cell::Bool(v)),
+                "is_approved" => src_row
+                    .get("is_approved")
+                    .and_then(|v| v.as_bool())
+                    .map(|v| Cell::Bool(v)),
+                "approval_status" => src_row
+                    .get("approval_status")
+                    .and_then(|v| v.as_str())
+                    .map(|v| Cell::String(v.to_owned())),
+                "signedShimmedUrl" => src_row
+                    .get("signedShimmedUrl")
+                    .and_then(|v| v.as_str())
+                    .map(|v| Cell::String(v.to_owned())),
                 "images" => {
                     // Concatenate all image URLs into a single string
                     if let Some(images) = src_row.get("images").and_then(|v| v.as_array()) {
@@ -157,13 +203,14 @@ impl Guest for ExampleFdw {
                     } else {
                         None
                     }
-                },
+                }
                 _ => {
                     // Unsupported column
                     return Err(format!(
                         "Column '{}' is not supported by the WhatsApp Catalog FDW",
                         tgt_col_name
-                    ).into());
+                    )
+                    .into());
                 }
             };
 
@@ -185,7 +232,7 @@ impl Guest for ExampleFdw {
     fn end_scan(_ctx: &Context) -> FdwResult {
         let this = Self::this_mut();
         this.src_rows.clear();
-        this.src_idx = 0;
+        this.src_idx = 0; // Reset the index
         Ok(())
     }
 
