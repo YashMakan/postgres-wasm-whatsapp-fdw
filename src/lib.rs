@@ -57,8 +57,14 @@ impl Guest for ExampleFdw {
         this.api_key = opts.require_or("api_key", "");
 
         // Validate that all required options are provided
-        if this.phone_number.is_empty() || this.from_number.is_empty() || this.api_key.is_empty() {
-            return Err("Missing required options: phone_number, from_number, api_key".to_string());
+        if this.phone_number.is_empty() {
+            return Err("Missing required option: phone_number".to_string());
+        }
+        if this.from_number.is_empty() {
+            return Err("Missing required option: from_number".to_string());
+        }
+        if this.api_key.is_empty() {
+            return Err("Missing required option: api_key".to_string());
         }
 
         // Set the base URL for WhatsApp Catalog API
@@ -91,17 +97,22 @@ impl Guest for ExampleFdw {
             headers,
             body: String::default(),
         };
-        let resp = http::get(&req)?;
-        let resp_json: JsonValue = serde_json::from_str(&resp.body).map_err(|e| e.to_string())?;
+        let resp = http::get(&req).map_err(|e| format!("HTTP request failed: {}", e))?;
+        let resp_json: JsonValue = serde_json::from_str(&resp.body)
+            .map_err(|e| format!("Failed to parse JSON response: {}", e))?;
 
         // Check if the API request was successful
-        if !resp_json.get("success").and_then(|v| v.as_bool()).unwrap_or(false) {
-            return Err("API request was not successful".to_owned());
+        if !resp_json
+            .get("success")
+            .and_then(|v| v.as_bool())
+            .unwrap_or(false)
+        {
+            return Err("API request was not successful".to_string());
         }
 
         // Extract the 'products' array from the response
         this.src_rows = resp_json
-            .get("products") // Changed from pointer to direct get
+            .get("products")
             .ok_or("Cannot get 'products' from response")?
             .as_array()
             .ok_or("'products' is not an array")?
