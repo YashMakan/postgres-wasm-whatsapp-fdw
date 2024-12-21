@@ -3,7 +3,7 @@ mod bindings;
 use serde_json::Value as JsonValue;
 
 use bindings::{
-    exports::supabase::wrappers::Guest,
+    exports::supabase::wrappers::routines::Guest, // Corrected import path
     supabase::wrappers::{
         http,
         types::{Cell, Context, FdwError, FdwResult, OptionsType, Row},
@@ -129,7 +129,7 @@ impl Guest for ExampleFdw {
 
         // Retrieve the column name as &str to match against string literals
         for tgt_col in _ctx.get_columns() {
-            let tgt_col_name = tgt_col.name().as_str(); // Fixed: Convert String to &str
+            let tgt_col_name = tgt_col.name().as_str(); // Convert String to &str
 
             let cell = match tgt_col_name {
                 "id" => src_row
