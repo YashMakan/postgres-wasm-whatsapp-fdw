@@ -51,10 +51,10 @@ impl Guest for ExampleFdw {
 
         // Retrieve API options from foreign server options
         let opts = ctx.get_options(OptionsType::Server);
-        // Fetch required options without using `?`
-        this.phone_number = opts.require_or("phone_number", "").unwrap_or_default();
-        this.from_number = opts.require_or("from_number", "").unwrap_or_default();
-        this.api_key = opts.require_or("api_key", "").unwrap_or_default();
+        // Fetch required options without using `unwrap_or_default`
+        this.phone_number = opts.require_or("phone_number", "");
+        this.from_number = opts.require_or("from_number", "");
+        this.api_key = opts.require_or("api_key", "");
 
         // Validate that all required options are provided
         if this.phone_number.is_empty() || this.from_number.is_empty() || this.api_key.is_empty() {
@@ -127,9 +127,15 @@ impl Guest for ExampleFdw {
         // Get the current product
         let src_row = &this.src_rows[this.src_idx];
 
-        // Retrieve the column name as &str to match against string literals
+        // Bind the column name to a variable to extend its lifetime
+        let col_name = tgt_col.name(); // Assuming 'tgt_col' is defined in the loop
+        let tgt_col_name = col_name.as_str(); // Convert String to &str
+
+        // Iterate through each target column and map source data
         for tgt_col in _ctx.get_columns() {
-            let tgt_col_name = tgt_col.name().as_str(); // Convert String to &str
+            // Bind the column name to ensure the String lives long enough
+            let col_name = tgt_col.name();
+            let tgt_col_name = col_name.as_str(); // Convert String to &str
 
             let cell = match tgt_col_name {
                 "id" => src_row
